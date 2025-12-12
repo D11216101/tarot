@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>21 點（Blackjack）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .description {
+            text-align: center;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+
+        .game-area {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .dealer-area, .player-area {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .area-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+
+        .cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+            min-height: 80px;
+            align-items: center;
+        }
+
+        .card {
+            background: white;
+            color: #000;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-size: 1.5em;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .card.red {
+            color: #e74c3c;
+        }
+
+        .card.hidden {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: #fff;
+        }
+
+        .score {
+            font-size: 1.2em;
+            margin-top: 10px;
+            color: #ffd700;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #newRoundBtn {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            color: white;
+        }
+
+        #hitBtn {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        #standBtn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .message-area {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .message {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .message.win {
+            color: #2ecc71;
+            text-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+        }
+
+        .message.lose {
+            color: #e74c3c;
+            text-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+        }
+
+        .message.push {
+            color: #f39c12;
+            text-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
+        }
+
+        .status-text {
+            font-size: 0.95em;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .card {
+                font-size: 1.2em;
+                padding: 10px 15px;
+            }
+
+            button {
+                padding: 12px 20px;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🃏 21 點（Blackjack）</h1>
+        <p class="description">玩家 vs 莊家｜目標：點數接近 21 但不爆牌</p>
+
+        <div class="game-area">
+            <!-- Dealer Area -->
+            <div class="dealer-area">
+                <div class="area-title">🎩 莊家（Dealer）</div>
+                <div class="cards" id="dealerCards"></div>
+                <div class="score" id="dealerScore">點數: -</div>
+            </div>
+
+            <!-- Player Area -->
+            <div class="player-area">
+                <div class="area-title">👤 玩家（Player）</div>
+                <div class="cards" id="playerCards"></div>
+                <div class="score" id="playerScore">點數: -</div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button id="newRoundBtn">🎲 新局 (New Round)</button>
+            <button id="hitBtn" disabled>🃏 要牌 (Hit)</button>
+            <button id="standBtn" disabled>✋ 停牌 (Stand)</button>
+        </div>
+
+        <!-- Message Area -->
+        <div class="message-area">
+            <div class="message" id="message">點擊「新局」開始遊戲</div>
+            <div class="status-text" id="statusText"></div>
+        </div>
+    </div>
+
+    <script>
+        // Game Constants
+        const SUITS = ['♠', '♥', '♦', '♣'];
+        const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        const STATES = {
+            IDLE: 'IDLE',
+            PLAYER_TURN: 'PLAYER_TURN',
+            DEALER_TURN: 'DEALER_TURN',
+            SETTLED: 'SETTLED'
+        };
+
+        // Game State
+        let deck = [];
+        let playerHand = [];
+        let dealerHand = [];
+        let dealerHidden = false;
+        let state = STATES.IDLE;
+        let message = '';
+
+        // DOM Elements
+        const dealerCardsEl = document.getElementById('dealerCards');
+        const playerCardsEl = document.getElementById('playerCards');
+        const dealerScoreEl = document.getElementById('dealerScore');
+        const playerScoreEl = document.getElementById('playerScore');
+        const messageEl = document.getElementById('message');
+        const statusTextEl = document.getElementById('statusText');
+        const newRoundBtn = document.getElementById('newRoundBtn');
+        const hitBtn = document.getElementById('hitBtn');
+        const standBtn = document.getElementById('standBtn');
+
+        // Event Listeners
+        newRoundBtn.addEventListener('click', newRound);
+        hitBtn.addEventListener('click', hit);
+        standBtn.addEventListener('click', stand);
+
+        // Card Functions
+        function createDeck() {
+            const newDeck = [];
+            for (let suit of SUITS) {
+                for (let rank of RANKS) {
+                    newDeck.push({ suit, rank });
+                }
+            }
+            return newDeck;
+        }
+
+        function shuffleDeck(array) {
+            // Fisher-Yates Shuffle
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function drawCard() {
+            return deck.pop();
+        }
+
+        function getCardValue(rank) {
+            if (rank === 'A') return 11;
+            if (['J', 'Q', 'K'].includes(rank)) return 10;
+            return parseInt(rank);
+        }
+
+        function calculateScore(hand) {
+            let score = 0;
+            let aces = 0;
+
+            for (let card of hand) {
+                const value = getCardValue(card.rank);
+                score += value;
+                if (card.rank === 'A') aces++;
+            }
+
+            // Adjust for Aces (11 -> 1 if needed)
+            while (score > 21 && aces > 0) {
+                score -= 10;
+                aces--;
+            }
+
+            return score;
+        }
+
+        function cardToHTML(card, hidden = false) {
+            if (hidden) {
+                return '<div class="card hidden">??</div>';
+            }
+            const isRed = card.suit === '♥' || card.suit === '♦';
+            const colorClass = isRed ? 'red' : '';
+            return `<div class="card ${colorClass}">${card.rank}${card.suit}</div>`;
+        }
+
+        // Game Commands
+        function newRound() {
+            // Reset state
+            state = STATES.PLAYER_TURN;
+            playerHand = [];
+            dealerHand = [];
+            dealerHidden = true;
+            message = '';
+
+            // Create and shuffle deck
+            deck = shuffleDeck(createDeck());
+
+            // Deal initial cards
+            playerHand.push(drawCard());
+            dealerHand.push(drawCard());
+            playerHand.push(drawCard());
+            dealerHand.push(drawCard());
+
+            // Update UI
+            updateUI();
+            setMessage('玩家回合', '選擇要牌或停牌');
+
+            // Enable buttons
+            hitBtn.disabled = false;
+            standBtn.disabled = false;
+        }
+
+        function hit() {
+            if (state !== STATES.PLAYER_TURN) return;
+
+            // Draw card for player
+            playerHand.push(drawCard());
+
+            // Calculate score
+            const playerScore = calculateScore(playerHand);
+
+            // Check for bust
+            if (playerScore > 21) {
+                state = STATES.SETTLED;
+                dealerHidden = false;
+                settle();
+            }
+
+            updateUI();
+        }
+
+        function stand() {
+            if (state !== STATES.PLAYER_TURN) return;
+
+            // Change state to dealer turn
+            state = STATES.DEALER_TURN;
+            dealerHidden = false;
+
+            // Dealer draws until >= 17
+            dealerPlay();
+
+            // Settle the game
+            state = STATES.SETTLED;
+            settle();
+
+            updateUI();
+        }
+
+        function dealerPlay() {
+            while (calculateScore(dealerHand) < 17) {
+                dealerHand.push(drawCard());
+            }
+        }
+
+        function settle() {
+            const playerScore = calculateScore(playerHand);
+            const dealerScore = calculateScore(dealerHand);
+
+            hitBtn.disabled = true;
+            standBtn.disabled = true;
+
+            // Determine result
+            if (playerScore > 21) {
+                setMessage('玩家輸了 (Lose)', `玩家爆牌！點數：${playerScore}`, 'lose');
+            } else if (dealerScore > 21) {
+                setMessage('玩家贏了 (Win)', `莊家爆牌！莊家：${dealerScore}，玩家：${playerScore}`, 'win');
+            } else if (playerScore > dealerScore) {
+                setMessage('玩家贏了 (Win)', `玩家：${playerScore} > 莊家：${dealerScore}`, 'win');
+            } else if (playerScore < dealerScore) {
+                setMessage('玩家輸了 (Lose)', `玩家：${playerScore} < 莊家：${dealerScore}`, 'lose');
+            } else {
+                setMessage('平手 (Push)', `玩家：${playerScore} = 莊家：${dealerScore}`, 'push');
+            }
+        }
+
+        // UI Functions
+        function updateUI() {
+            // Update dealer cards
+            let dealerHTML = '';
+            dealerHand.forEach((card, index) => {
+                if (index === 1 && dealerHidden) {
+                    dealerHTML += cardToHTML(card, true);
+                } else {
+                    dealerHTML += cardToHTML(card, false);
+                }
+            });
+            dealerCardsEl.innerHTML = dealerHTML;
+
+            // Update player cards
+            let playerHTML = '';
+            playerHand.forEach(card => {
+                playerHTML += cardToHTML(card, false);
+            });
+            playerCardsEl.innerHTML = playerHTML;
+
+            // Update scores
+            const playerScore = calculateScore(playerHand);
+            playerScoreEl.textContent = `點數: ${playerScore}`;
+
+            if (dealerHidden && dealerHand.length > 0) {
+                const visibleScore = getCardValue(dealerHand[0].rank);
+                dealerScoreEl.textContent = `點數: ${visibleScore} + ?`;
+            } else {
+                const dealerScore = calculateScore(dealerHand);
+                dealerScoreEl.textContent = `點數: ${dealerScore}`;
+            }
+        }
+
+        function setMessage(msg, status = '', type = '') {
+            messageEl.textContent = msg;
+            statusTextEl.textContent = status;
+            
+            // Remove all classes
+            messageEl.classList.remove('win', 'lose', 'push');
+            
+            // Add appropriate class
+            if (type) {
+                messageEl.classList.add(type);
+            }
+        }
+
+        // Initialize
+        setMessage('點擊「新局」開始遊戲', '玩家 vs 莊家，目標接近 21 點');
+    </script>
+</body>
+</html>
