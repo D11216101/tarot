@@ -188,6 +188,57 @@
             opacity: 0.9;
         }
 
+        .statistics {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .statistics-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-value.wins {
+            color: #2ecc71;
+        }
+
+        .stat-value.losses {
+            color: #e74c3c;
+        }
+
+        .stat-value.total {
+            color: #3498db;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
         @media (max-width: 600px) {
             h1 {
                 font-size: 1.8em;
@@ -238,6 +289,25 @@
             <div class="message" id="message">點擊「新局」開始遊戲</div>
             <div class="status-text" id="statusText"></div>
         </div>
+
+        <!-- Statistics -->
+        <div class="statistics">
+            <div class="statistics-title">📊 遊戲統計</div>
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-value wins" id="winsCount">0</div>
+                    <div class="stat-label">勝利</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value losses" id="lossesCount">0</div>
+                    <div class="stat-label">失敗</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value total" id="totalGames">0</div>
+                    <div class="stat-label">總局數</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -259,6 +329,11 @@
         let state = STATES.IDLE;
         let message = '';
 
+        // Statistics
+        let wins = 0;
+        let losses = 0;
+        let totalGames = 0;
+
         // DOM Elements
         const dealerCardsEl = document.getElementById('dealerCards');
         const playerCardsEl = document.getElementById('playerCards');
@@ -269,6 +344,9 @@
         const newRoundBtn = document.getElementById('newRoundBtn');
         const hitBtn = document.getElementById('hitBtn');
         const standBtn = document.getElementById('standBtn');
+        const winsCountEl = document.getElementById('winsCount');
+        const lossesCountEl = document.getElementById('lossesCount');
+        const totalGamesEl = document.getElementById('totalGames');
 
         // Event Listeners
         newRoundBtn.addEventListener('click', newRound);
@@ -414,17 +492,34 @@
             standBtn.disabled = true;
 
             // Determine result
+            let result = '';
             if (playerScore > 21) {
+                result = 'lose';
                 setMessage('玩家輸了 (Lose)', `玩家爆牌！點數：${playerScore}`, 'lose');
             } else if (dealerScore > 21) {
+                result = 'win';
                 setMessage('玩家贏了 (Win)', `莊家爆牌！莊家：${dealerScore}，玩家：${playerScore}`, 'win');
             } else if (playerScore > dealerScore) {
+                result = 'win';
                 setMessage('玩家贏了 (Win)', `玩家：${playerScore} > 莊家：${dealerScore}`, 'win');
             } else if (playerScore < dealerScore) {
+                result = 'lose';
                 setMessage('玩家輸了 (Lose)', `玩家：${playerScore} < 莊家：${dealerScore}`, 'lose');
             } else {
+                result = 'push';
                 setMessage('平手 (Push)', `玩家：${playerScore} = 莊家：${dealerScore}`, 'push');
             }
+
+            // Update statistics (push doesn't count as win or loss)
+            if (result === 'win') {
+                wins++;
+                totalGames++;
+            } else if (result === 'lose') {
+                losses++;
+                totalGames++;
+            }
+            
+            updateStatistics();
         }
 
         // UI Functions
@@ -473,8 +568,15 @@
             }
         }
 
+        function updateStatistics() {
+            winsCountEl.textContent = wins;
+            lossesCountEl.textContent = losses;
+            totalGamesEl.textContent = totalGames;
+        }
+
         // Initialize
         setMessage('點擊「新局」開始遊戲', '玩家 vs 莊家，目標接近 21 點');
+        updateStatistics();
     </script>
 </body>
 </html>
