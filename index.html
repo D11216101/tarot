@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>10點半（Ten and a Half）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", "微軟正黑體", Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .description {
+            font-size: 1em;
+            opacity: 0.9;
+            max-width: 600px;
+            line-height: 1.5;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .player-area, .dealer-area {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .area-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+
+        .hand-display {
+            min-height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            font-size: 1.8em;
+            letter-spacing: 2px;
+            word-wrap: break-word;
+        }
+
+        .score-display {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #90ee90;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px 0 rgba(102, 126, 234, 0.4);
+            font-weight: bold;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px 0 rgba(102, 126, 234, 0.6);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .message-area {
+            background: rgba(255, 215, 0, 0.2);
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .message-win {
+            background: rgba(144, 238, 144, 0.3);
+            border-color: #90ee90;
+        }
+
+        .message-lose {
+            background: rgba(255, 99, 71, 0.3);
+            border-color: #ff6347;
+        }
+
+        .message-push {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>10點半（Ten and a Half）</h1>
+        <p class="description">
+            目標：讓點數接近 10.5 且不超過，並在結算時與莊家比較勝負。<br>
+            A 為 1 點，2～10 為牌面點數，J/Q/K 為 0.5 點（半點）。<br>
+            莊家點數低於 8 必須補牌，8 以上停牌。
+        </p>
+    </header>
+
+    <div class="game-container">
+        <!-- Dealer Area -->
+        <div class="dealer-area">
+            <div class="area-title">莊家（Dealer）</div>
+            <div class="hand-display" id="dealer-hand">等待開始...</div>
+            <div class="score-display" id="dealer-score">點數：?</div>
+        </div>
+
+        <!-- Player Area -->
+        <div class="player-area">
+            <div class="area-title">玩家（Player）</div>
+            <div class="hand-display" id="player-hand">等待開始...</div>
+            <div class="score-display" id="player-score">點數：0</div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button id="new-round-btn" onclick="startNewRound()">New Round</button>
+            <button id="hit-btn" onclick="playerHit()" disabled>Hit（要牌）</button>
+            <button id="stand-btn" onclick="playerStand()" disabled>Stand（停牌）</button>
+        </div>
+
+        <!-- Message Area -->
+        <div class="message-area" id="message-area">
+            點擊「New Round」開始新局
+        </div>
+    </div>
+
+    <script>
+        // Card suits and values
+        const SUITS = ['♠', '♥', '♦', '♣'];
+        const VALUES = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+        // Timing constants
+        const DEALER_TURN_DELAY = 500;
+        const RESULT_DISPLAY_DELAY = 500;
+
+        // Game state
+        let deck = [];
+        let playerHand = [];
+        let dealerHand = [];
+        let gameOver = false;
+        let playerTurn = false;
+
+        // Initialize deck
+        function createDeck() {
+            const newDeck = [];
+            for (let suit of SUITS) {
+                for (let value of VALUES) {
+                    newDeck.push({ value, suit });
+                }
+            }
+            return newDeck;
+        }
+
+        // Shuffle deck using Fisher-Yates algorithm
+        function shuffleDeck(deck) {
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+            return deck;
+        }
+
+        // Get card value for 10點半
+        function getCardValue(card) {
+            if (card.value === 'A') return 1;
+            if (['J', 'Q', 'K'].includes(card.value)) return 0.5;
+            return parseInt(card.value);
+        }
+
+        // Calculate hand score for 10點半
+        function calculateScore(hand) {
+            let score = 0;
+
+            for (let card of hand) {
+                score += getCardValue(card);
+            }
+
+            return score;
+        }
+
+        // Display hand
+        function displayHand(hand, elementId, hideSecond = false) {
+            const element = document.getElementById(elementId);
+            if (hideSecond && hand.length >= 2) {
+                element.textContent = `${hand[0].value}${hand[0].suit} ??`;
+            } else {
+                element.textContent = hand.map(card => `${card.value}${card.suit}`).join(' ');
+            }
+        }
+
+        // Update displays
+        function updateDisplay() {
+            displayHand(playerHand, 'player-hand');
+            document.getElementById('player-score').textContent = `點數：${calculateScore(playerHand)}`;
+
+            if (gameOver || !playerTurn) {
+                displayHand(dealerHand, 'dealer-hand');
+                document.getElementById('dealer-score').textContent = `點數：${calculateScore(dealerHand)}`;
+            } else {
+                displayHand(dealerHand, 'dealer-hand', true);
+                document.getElementById('dealer-score').textContent = `點數：?`;
+            }
+        }
+
+        // Deal card
+        function dealCard() {
+            return deck.pop();
+        }
+
+        // Start new round
+        function startNewRound() {
+            // Reset game state
+            deck = shuffleDeck(createDeck());
+            playerHand = [];
+            dealerHand = [];
+            gameOver = false;
+            playerTurn = true;
+
+            // Deal initial cards
+            playerHand.push(dealCard());
+            dealerHand.push(dealCard());
+            playerHand.push(dealCard());
+            dealerHand.push(dealCard());
+
+            // Update UI
+            updateDisplay();
+            setMessage('輪到玩家', '');
+            enableButtons(false, true, true);
+
+            // Check for instant 10.5 or bust
+            const playerScore = calculateScore(playerHand);
+            const dealerScore = calculateScore(dealerHand);
+            
+            if (playerScore > 10.5) {
+                endGame('玩家爆牌（Bust）！莊家獲勝！', 'message-lose');
+            } else if (playerScore === 10.5) {
+                if (dealerScore === 10.5) {
+                    endGame('平手（Push）！雙方都是 10點半！', 'message-push');
+                } else {
+                    endGame('10點半！玩家獲勝！', 'message-win');
+                }
+            }
+        }
+
+        // Player hits
+        function playerHit() {
+            if (!playerTurn || gameOver) return;
+
+            playerHand.push(dealCard());
+            updateDisplay();
+
+            const score = calculateScore(playerHand);
+            if (score > 10.5) {
+                endGame('玩家爆牌（Bust）！莊家獲勝！', 'message-lose');
+            } else if (score === 10.5) {
+                setMessage('玩家 10點半！自動停牌', '');
+                playerStand();
+            }
+        }
+
+        // Player stands
+        function playerStand() {
+            if (!playerTurn || gameOver) return;
+
+            playerTurn = false;
+            setMessage('莊家回合', '');
+            updateDisplay();
+
+            // Dealer's turn
+            setTimeout(dealerTurn, DEALER_TURN_DELAY);
+        }
+
+        // Dealer's turn
+        function dealerTurn() {
+            let dealerScore = calculateScore(dealerHand);
+
+            // Dealer must hit on less than 8
+            while (dealerScore < 8) {
+                dealerHand.push(dealCard());
+                dealerScore = calculateScore(dealerHand);
+                updateDisplay();
+            }
+
+            // Determine winner
+            setTimeout(() => determineWinner(), RESULT_DISPLAY_DELAY);
+        }
+
+        // Determine winner
+        function determineWinner() {
+            const playerScore = calculateScore(playerHand);
+            const dealerScore = calculateScore(dealerHand);
+
+            // Check if player busted
+            if (playerScore > 10.5) {
+                endGame('玩家爆牌（Bust）！莊家獲勝！', 'message-lose');
+            } else if (dealerScore > 10.5) {
+                endGame('莊家爆牌（Bust）！玩家獲勝！', 'message-win');
+            } else if (playerScore > dealerScore) {
+                endGame(`玩家獲勝！（玩家：${playerScore} vs 莊家：${dealerScore}）`, 'message-win');
+            } else if (dealerScore > playerScore) {
+                endGame(`莊家獲勝！（玩家：${playerScore} vs 莊家：${dealerScore}）`, 'message-lose');
+            } else {
+                endGame(`平手（Push）！（雙方都是 ${playerScore} 點）`, 'message-push');
+            }
+        }
+
+        // End game
+        function endGame(message, cssClass) {
+            gameOver = true;
+            playerTurn = false;
+            updateDisplay();
+            setMessage(message, cssClass);
+            enableButtons(true, false, false);
+        }
+
+        // Set message
+        function setMessage(text, cssClass) {
+            const messageArea = document.getElementById('message-area');
+            messageArea.textContent = text;
+            messageArea.className = 'message-area ' + cssClass;
+        }
+
+        // Enable/disable buttons
+        function enableButtons(newRound, hit, stand) {
+            document.getElementById('new-round-btn').disabled = !newRound;
+            document.getElementById('hit-btn').disabled = !hit;
+            document.getElementById('stand-btn').disabled = !stand;
+        }
+    </script>
+</body>
+</html>
