@@ -296,6 +296,10 @@
         }
 
         function drawCard() {
+            if (deck.length === 0) {
+                // If deck is empty, create and shuffle a new deck
+                deck = shuffleDeck(createDeck());
+            }
             return deck.pop();
         }
 
