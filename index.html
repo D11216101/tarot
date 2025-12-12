@@ -190,6 +190,10 @@
         const SUITS = ['♠', '♥', '♦', '♣'];
         const VALUES = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
+        // Timing constants
+        const DEALER_TURN_DELAY = 500;
+        const RESULT_DISPLAY_DELAY = 500;
+
         // Game state
         let deck = [];
         let playerHand = [];
@@ -331,7 +335,7 @@
             updateDisplay();
 
             // Dealer's turn
-            setTimeout(dealerTurn, 500);
+            setTimeout(dealerTurn, DEALER_TURN_DELAY);
         }
 
         // Dealer's turn
@@ -346,7 +350,7 @@
             }
 
             // Determine winner
-            setTimeout(() => determineWinner(), 500);
+            setTimeout(() => determineWinner(), RESULT_DISPLAY_DELAY);
         }
 
         // Determine winner
