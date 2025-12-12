@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>21點（Blackjack）</title>
+    <title>10點半（Ten and a Half）</title>
     <style>
         * {
             margin: 0;
@@ -149,11 +149,11 @@
 </head>
 <body>
     <header>
-        <h1>21點（Blackjack）</h1>
+        <h1>10點半（Ten and a Half）</h1>
         <p class="description">
-            目標：讓點數接近 21 且不超過，並在結算時與莊家比較勝負。<br>
-            A 為 11 或 1 點，J/Q/K 為 10 點，其餘為牌面點數。<br>
-            莊家小於 17 必須補牌，17 以上停牌。
+            目標：讓點數接近 10.5 且不超過，並在結算時與莊家比較勝負。<br>
+            A 為 1 點，2～10 為牌面點數，J/Q/K 為 0.5 點（半點）。<br>
+            莊家點數低於 8 必須補牌，8 以上停牌。
         </p>
     </header>
 
@@ -221,28 +221,19 @@
             return deck;
         }
 
-        // Get card value
+        // Get card value for 10點半
         function getCardValue(card) {
-            if (card.value === 'A') return 11;
-            if (['J', 'Q', 'K'].includes(card.value)) return 10;
+            if (card.value === 'A') return 1;
+            if (['J', 'Q', 'K'].includes(card.value)) return 0.5;
             return parseInt(card.value);
         }
 
-        // Calculate hand score (handle Aces)
+        // Calculate hand score for 10點半
         function calculateScore(hand) {
             let score = 0;
-            let aces = 0;
 
             for (let card of hand) {
-                const value = getCardValue(card);
-                score += value;
-                if (card.value === 'A') aces++;
-            }
-
-            // Adjust for Aces
-            while (score > 21 && aces > 0) {
-                score -= 10;
-                aces--;
+                score += getCardValue(card);
             }
 
             return score;
@@ -297,15 +288,17 @@
             setMessage('輪到玩家', '');
             enableButtons(false, true, true);
 
-            // Check for instant blackjack
+            // Check for instant 10.5 or bust
             const playerScore = calculateScore(playerHand);
             const dealerScore = calculateScore(dealerHand);
             
-            if (playerScore === 21) {
-                if (dealerScore === 21) {
-                    endGame('平手（Push）！雙方都是 Blackjack！', 'message-push');
+            if (playerScore > 10.5) {
+                endGame('玩家爆牌（Bust）！莊家獲勝！', 'message-lose');
+            } else if (playerScore === 10.5) {
+                if (dealerScore === 10.5) {
+                    endGame('平手（Push）！雙方都是 10點半！', 'message-push');
                 } else {
-                    endGame('Blackjack！玩家獲勝！', 'message-win');
+                    endGame('10點半！玩家獲勝！', 'message-win');
                 }
             }
         }
@@ -318,10 +311,10 @@
             updateDisplay();
 
             const score = calculateScore(playerHand);
-            if (score > 21) {
+            if (score > 10.5) {
                 endGame('玩家爆牌（Bust）！莊家獲勝！', 'message-lose');
-            } else if (score === 21) {
-                setMessage('玩家 21 點！自動停牌', '');
+            } else if (score === 10.5) {
+                setMessage('玩家 10點半！自動停牌', '');
                 playerStand();
             }
         }
@@ -342,8 +335,8 @@
         function dealerTurn() {
             let dealerScore = calculateScore(dealerHand);
 
-            // Dealer must hit on 16 or less
-            while (dealerScore < 17) {
+            // Dealer must hit on less than 8
+            while (dealerScore < 8) {
                 dealerHand.push(dealCard());
                 dealerScore = calculateScore(dealerHand);
                 updateDisplay();
@@ -358,7 +351,10 @@
             const playerScore = calculateScore(playerHand);
             const dealerScore = calculateScore(dealerHand);
 
-            if (dealerScore > 21) {
+            // Check if player busted
+            if (playerScore > 10.5) {
+                endGame('玩家爆牌（Bust）！莊家獲勝！', 'message-lose');
+            } else if (dealerScore > 10.5) {
                 endGame('莊家爆牌（Bust）！玩家獲勝！', 'message-win');
             } else if (playerScore > dealerScore) {
                 endGame(`玩家獲勝！（玩家：${playerScore} vs 莊家：${dealerScore}）`, 'message-win');
